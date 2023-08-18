@@ -1,12 +1,13 @@
 use geo::prelude::*;
-use serde_json::{Result, Value};
-use std::fmt::format;
+use serde_json::Value;
+use std::io::BufWriter;
+use std::path::Path;
+use teloxide::types::InputFile;
 
-use geo::geodesic_distance;
 use geo::point;
-use gpx::read;
+use gpx::{read, write};
 use gpx::{Gpx, Track, TrackSegment};
-use std::fs::File;
+use std::fs::{remove_file, File};
 use std::io::BufReader;
 use teloxide::{prelude::*, utils::command::BotCommands};
 
@@ -49,7 +50,7 @@ enum Command {
     )]
     CutGPX {
         filename: String,
-        distance: u64,
+        distance: u32,
         start_address: String,
     },
     #[command(
@@ -58,7 +59,7 @@ enum Command {
     )]
     CutGPXCoordinates {
         filename: String,
-        distance: u64,
+        distance: u32,
         longitude: f64,
         latitude: f64,
     },
@@ -136,21 +137,26 @@ async fn handle_gpx_file(
     bot: Bot,
     msg: Message,
     filename: String,
-    distance: u64,
+    expected_distance: u32,
     longitude: f64,
     latitude: f64,
 ) {
-    let location_point = point!(x: latitude, y: longitude);
+    let location_point = point!(x: longitude, y: latitude);
     println!(
         "handling gpx file {} {} {} {}",
-        filename, distance, longitude, latitude
+        filename, expected_distance, longitude, latitude
     );
-    let file = File::open("gpx_files/EuroVelo15developed.gpx").unwrap();
+    println!(
+        "location_point {} {}",
+        location_point.x(),
+        location_point.y()
+    );
+    let file = File::open(format!("gpx_files/{}", filename)).unwrap();
     let reader = BufReader::new(file);
 
     // read takes any io::Read and gives a Result<Gpx, Error>.
-    let gpx: Gpx = read(reader).unwrap();
-    let track: &Track = &gpx.tracks[0];
+    let gpx_file: Gpx = read(reader).unwrap();
+    let track: &Track = &gpx_file.tracks[0];
     match &track.name {
         Some(name) => {
             println!("track name: {}", name);
@@ -161,8 +167,7 @@ async fn handle_gpx_file(
     }
     if track.segments.capacity() > 0 {
         let segment: &TrackSegment = &track.segments[0];
-        println!("segment points {}", segment.points.capacity());
-        let mut minDistance = 100_000_000;
+        let mut min_distance: f64 = 100_000_000.0;
         let mut min_index = 0;
         let mut count = 0;
         let mut bigger_count = 0;
@@ -170,15 +175,8 @@ async fn handle_gpx_file(
             // find nearest point in gpx file
             let distance = point.point().geodesic_distance(&location_point);
 
-            println!(
-                "index {} wp: x:{} y:{} distance: {}",
-                count,
-                point.point().x(),
-                point.point().y(),
-                distance
-            );
-            if distance < minDistance {
-                distance = minDistance;
+            if distance < min_distance {
+                min_distance = distance;
                 min_index = count;
                 bigger_count = 0;
             } else {
@@ -186,18 +184,61 @@ async fn handle_gpx_file(
             }
 
             count += 1;
-            if bigger_count > 10 {
+            if bigger_count > 100 {
                 break;
             }
         }
 
-        // create new gpx file with the right starting point and return it in the chat
+        println!(
+            "closest point: {} distance: {} x: {} y: {}",
+            min_index,
+            min_distance,
+            segment.points[min_index].point().x(),
+            segment.points[min_index].point().y()
+        );
+
+        let mut resulting_gpx: Gpx = gpx::Gpx::default();
+        resulting_gpx.version = gpx_file.version;
+        resulting_gpx.tracks.clear();
+
+        let mut new_segment: TrackSegment = gpx::TrackSegment::new();
+        let mut lenght = 0.0;
+        let mut last_point = segment.points[min_index].point();
+
+        for i in min_index..segment.points.capacity() - 1 {
+            let current_waypoint = segment.points[i].clone();
+            let current_point = current_waypoint.point();
+            new_segment.points.push(current_waypoint);
+            lenght += current_point.geodesic_distance(&last_point) / 1000.0;
+            last_point = current_point;
+            println!(
+                "lens: {} {}",
+                new_segment.linestring().euclidean_length() * 100.0,
+                lenght
+            );
+            if lenght > f64::from(expected_distance) {
+                break;
+            }
+        }
+
+        let mut new_track: Track = gpx::Track::new();
+        new_track.segments.push(new_segment);
+
+        resulting_gpx.tracks.push(new_track);
+
+        let temp_file_path = "gpx_files/temp_track.gpx";
+        if Path::new(temp_file_path).exists() {
+            remove_file(temp_file_path).unwrap();
+        }
+
+        let out_file: File = File::create(temp_file_path).unwrap();
+        let writer = BufWriter::new(out_file);
+        write(&resulting_gpx, writer).unwrap();
+
+        bot.send_document(msg.chat.id, InputFile::file(temp_file_path))
+            .await
+            .unwrap();
     } else {
         //TODO: return error message that there is no track in the gpx selected / provided
     }
-
-    // create new gpx file for the new distance
-    // TODO: send new file to chat
-    // bot.send_message(msg.chat.id, "here is your gpx have fun")
-    // .await?;
 }
