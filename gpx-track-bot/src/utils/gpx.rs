@@ -1,23 +1,20 @@
 use geo::prelude::*;
+use rand::distributions::{Alphanumeric, DistString};
 use std::io::BufWriter;
 use std::path::Path;
-use teloxide::types::InputFile;
 
 use geo::point;
 use gpx::{read, write};
 use gpx::{Gpx, Track, TrackSegment};
 use std::fs::{remove_file, File};
 use std::io::BufReader;
-use teloxide::prelude::*;
 
-pub async fn handle_gpx_file(
-    bot: Bot,
-    msg: Message,
+pub fn generate_partial_gpx(
     filename: String,
     expected_distance: u32,
     longitude: f64,
     latitude: f64,
-) {
+) -> Option<String> {
     let location_point = point!(x: longitude, y: latitude);
     println!(
         "handling gpx file {} {} {} {}",
@@ -28,7 +25,9 @@ pub async fn handle_gpx_file(
         location_point.x(),
         location_point.y()
     );
-    let file = File::open(format!("gpx_files/{}", filename)).unwrap();
+
+    let file = File::open(filename).unwrap();
+    // let file = File::open(format!("gpx_files/{}", filename)).unwrap();
     let reader = BufReader::new(file);
 
     // read takes any io::Read and gives a Result<Gpx, Error>.
@@ -100,20 +99,21 @@ pub async fn handle_gpx_file(
 
         resulting_gpx.tracks.push(new_track);
 
-        // TODO: and a random number to the filename
-        let temp_file_path = "gpx_files/temp_track.gpx";
-        if Path::new(temp_file_path).exists() {
-            remove_file(temp_file_path).unwrap();
+        let temp_file_path = format!(
+            "gpx_files/temp_track{}.gpx",
+            Alphanumeric.sample_string(&mut rand::thread_rng(), 16)
+        );
+        if Path::new(&temp_file_path).exists() {
+            remove_file(&temp_file_path).unwrap();
         }
 
-        let out_file: File = File::create(temp_file_path).unwrap();
+        let out_file: File = File::create(&temp_file_path).unwrap();
         let writer = BufWriter::new(out_file);
         write(&resulting_gpx, writer).unwrap();
 
-        bot.send_document(msg.chat.id, InputFile::file(temp_file_path))
-            .await
-            .unwrap();
+        return Some(temp_file_path);
     } else {
+        return None;
         //TODO: return error message that there is no track in the gpx selected / provided / matching the query
     }
 }

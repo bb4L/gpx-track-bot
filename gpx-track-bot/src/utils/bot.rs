@@ -1,10 +1,13 @@
 use std::env;
 
-use super::gpx::handle_gpx_file;
+use crate::utils::files::add_file;
 
-use super::commands::Command;
+use crate::utils::commands::Command;
+use crate::utils::files::get_file_for_user;
+use crate::utils::gpx::generate_partial_gpx;
+
 use serde_json::Value;
-// use dptree::handler::core::Handler;
+use teloxide::types::InputFile;
 use teloxide::{
     dispatching::DpHandlerDescription, prelude::*, types::ParseMode, utils::command::BotCommands,
     RequestError,
@@ -110,7 +113,7 @@ async fn answer(bot: Bot, msg: Message, cmd: Command) -> ResponseResult<()> {
             let v: Value = serde_json::from_str(&string_response).unwrap();
             let lon: f64 = v[0]["lon"].as_str().unwrap().parse().unwrap();
             let lat: f64 = v[0]["lat"].as_str().unwrap().parse().unwrap();
-            handle_gpx_file(bot, msg, filename, distance, lon, lat).await;
+            handle_gpx(bot, msg, filename, distance, lon, lat).await;
         }
         Command::CoordinatesCut {
             filename,
@@ -122,7 +125,7 @@ async fn answer(bot: Bot, msg: Message, cmd: Command) -> ResponseResult<()> {
                 .await?;
             println!("longitued: {}", longitude.parse::<f64>().unwrap());
             println!("latitude: {}", latitude.parse::<f64>().unwrap());
-            handle_gpx_file(
+            handle_gpx(
                 bot,
                 msg,
                 filename,
@@ -139,6 +142,40 @@ async fn answer(bot: Bot, msg: Message, cmd: Command) -> ResponseResult<()> {
     Ok(())
 }
 
+async fn handle_gpx(
+    bot: Bot,
+    msg: Message,
+    filename: String,
+    expected_distance: u32,
+    longitude: f64,
+    latitude: f64,
+) {
+    let awaited_result = get_file_for_user(msg.from().unwrap().id.to_string(), filename).await;
+
+    if awaited_result.is_none() {
+        bot.send_message(msg.chat.id, "could not resolve file")
+        return;
+    }
+    let file_path = awaited_result.unwrap();
+
+    match generate_partial_gpx(
+        file_path.to_string(),
+        expected_distance,
+        longitude,
+        latitude,
+    ) {
+        Some(filepath) => {
+            bot.send_document(msg.chat.id, InputFile::file(&filepath))
+                .await
+                .unwrap();
+            std::fs::remove_file(filepath).unwrap();
+        }
+        None => {
+            let _ = message_handler(bot, msg).await;
+        }
+    }
+}
+
 async fn permission_denied(bot: Bot, msg: Message) -> ResponseResult<()> {
     println!("message id {}", msg.from().unwrap().id);
     bot.send_message(msg.chat.id, "you don't have permission to use this bot; create a issue on https://github.com/bb4L/gpx-track-bot if you want to use the bot")
@@ -149,10 +186,26 @@ async fn permission_denied(bot: Bot, msg: Message) -> ResponseResult<()> {
 async fn default_message_handler(bot: Bot, msg: Message) -> ResponseResult<()> {
     match msg.document() {
         Some(document) => {
-            // let unwrapped = document.();
             // FIXME: handle document
             println!("file: {}", document.clone().file_name.unwrap());
-            bot.send_message(msg.chat.id, "handling file").await?;
+            match &document.mime_type {
+                Some(mime_type) => {
+                    println!("file type {}", mime_type);
+                    if mime_type.to_string() == "application/gpx+xml" {
+                        bot.send_message(msg.chat.id, "handling file").await?;
+                        // let file = bot.get_file(&document.file.id).await?;
+                        let response =
+                            add_file(&bot.clone(), msg.from().unwrap().id.to_string(), document)
+                                .await;
+                        bot.send_message(msg.chat.id, response).await?;
+                    } else {
+                        bot.send_message(msg.chat.id, "wrong type").await?;
+                    }
+                }
+                None => {
+                    println!("unclear mime type");
+                }
+            }
             Ok(())
         }
         None => message_handler(bot, msg).await,
