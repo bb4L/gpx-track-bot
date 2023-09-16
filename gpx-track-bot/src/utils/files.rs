@@ -1,4 +1,4 @@
-use std::{env, io::BufWriter};
+use std::env;
 use teloxide::{net::Download, requests::Requester, types::Document, Bot};
 
 pub async fn add_file(bot: &Bot, user_id: String, document: &Document) -> String {
@@ -27,7 +27,7 @@ pub async fn add_file(bot: &Bot, user_id: String, document: &Document) -> String
                         return "file with the same name was already stored".to_owned();
                     }
                 }
-                Err(err) => {
+                Err(_err) => {
                     return "could not test if file already exists".to_owned();
                 }
             }
@@ -44,6 +44,38 @@ pub async fn add_file(bot: &Bot, user_id: String, document: &Document) -> String
             return "could not check directory".to_owned();
         }
     }
+}
+
+pub async fn remove_file(user_id: String, file_name: String) -> bool {
+    let file_path = get_file_path(user_id, file_name);
+    if !tokio::fs::try_exists(&file_path).await.unwrap() {
+        return false;
+    } else {
+        tokio::fs::remove_file(file_path).await.unwrap();
+        return true;
+    }
+}
+
+pub async fn list_files(user_id: String) -> Vec<String> {
+    let user_path = get_user_path(user_id);
+    let mut result: Vec<String> = Vec::new();
+    if tokio::fs::try_exists(&user_path).await.unwrap() {
+        let mut read_dir = tokio::fs::read_dir(&user_path).await.unwrap();
+
+        loop {
+            let mut stop = false;
+            match read_dir.next_entry().await.unwrap() {
+                Some(e) => result.push(e.file_name().to_str().unwrap().to_string()),
+                None => {
+                    stop = true;
+                }
+            }
+            if stop {
+                break;
+            }
+        }
+    }
+    return result;
 }
 
 pub async fn get_file_for_user(user_id: String, file_name: String) -> Option<String> {

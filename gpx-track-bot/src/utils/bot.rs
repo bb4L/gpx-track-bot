@@ -1,6 +1,5 @@
-use std::env;
-
 use crate::utils::files::add_file;
+use std::env;
 
 use crate::utils::commands::Command;
 use crate::utils::files::get_file_for_user;
@@ -46,10 +45,8 @@ pub fn build_dp_tree(
                         .collect();
 
                     if env_allowed_users.contains(&msg.from().unwrap().id) {
-                        println!("user in allowed users");
                         None
                     } else {
-                        println!("user not in allowed users");
                         Some(())
                     }
                 })
@@ -135,8 +132,31 @@ async fn answer(bot: Bot, msg: Message, cmd: Command) -> ResponseResult<()> {
             )
             .await;
         }
-        _ => {
-            let _ = message_handler(bot, msg).await;
+
+        Command::ListFiles => {
+            let files = super::files::list_files(msg.from().unwrap().id.to_string()).await;
+            if files.len() > 0 {
+                bot.send_message(
+                    msg.chat.id,
+                    String::from("stored files:\n")
+                        + &files.iter().map(|x| format!("- {}", x)).collect::<String>(),
+                )
+                .await?;
+            } else {
+                bot.send_message(msg.chat.id, "you don't have any files stored")
+                    .await?;
+            }
+        }
+
+        Command::DeleteFile { filename } => {
+            let ok = super::files::remove_file(msg.from().unwrap().id.to_string(), filename).await;
+            if ok {
+                bot.send_message(msg.chat.id, "sucessfully removed file")
+                    .await?;
+            } else {
+                bot.send_message(msg.chat.id, "cold not remove file")
+                    .await?;
+            }
         }
     };
     Ok(())
@@ -153,7 +173,9 @@ async fn handle_gpx(
     let awaited_result = get_file_for_user(msg.from().unwrap().id.to_string(), filename).await;
 
     if awaited_result.is_none() {
-        bot.send_message(msg.chat.id, "could not resolve file")
+        let _ = bot
+            .send_message(msg.chat.id, "could not resolve file")
+            .await;
         return;
     }
     let file_path = awaited_result.unwrap();

@@ -1,4 +1,4 @@
-use teloxide::{prelude::*, utils::command::BotCommands};
+use teloxide::utils::command::BotCommands;
 
 #[derive(BotCommands, Clone)]
 #[command(rename_rule = "lowercase", description = "Supported commands:")]
@@ -28,16 +28,10 @@ pub enum Command {
         longitude: String,
         latitude: String,
     },
-
-    // #[command(description = "information about how to get access\n\n")]
-    // RequestAccess,
-    // #[command()]
-    // AddFile,
+    #[command(
+        description = "delete the file with the given name\n Arguments: filename\nExample: `/deletefile MyGpxFile.gpx`\n"
+    )]
+    DeleteFile { filename: String },
     #[command(description = "list the stored files available\n")]
     ListFiles,
-    #[command(
-        description = "delete the file with the given name\n Arguments: filename\nExample: `/deletefile MyGpxFile.gpx`",
-        parse_with = "split"
-    )]
-    DeleteFile,
 }
