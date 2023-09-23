@@ -86,9 +86,6 @@ async fn answer(bot: Bot, msg: Message, cmd: Command) -> ResponseResult<()> {
                 .send_message(msg.chat.id, text)
                 .await?;
         }
-        Command::Dice => {
-            bot.send_dice(msg.chat.id).await?;
-        }
         Command::AddressCut {
             filename,
             distance,

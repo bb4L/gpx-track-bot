@@ -7,8 +7,6 @@ pub enum Command {
     Start,
     #[command(description = "display this text\n")]
     Help,
-    #[command(description = "roll a dice\n")]
-    Dice,
     #[command(
         description = "get the cut out version of the gxp file \nArguments: filename, distance, address \nExample: `/cutgpx MyGpxFile.gpx 20 random_sreeet+random_city`\n",
         parse_with = "split"
