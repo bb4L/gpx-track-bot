@@ -208,14 +208,11 @@ async fn permission_denied(bot: Bot, msg: Message) -> ResponseResult<()> {
 async fn default_message_handler(bot: Bot, msg: Message) -> ResponseResult<()> {
     match msg.document() {
         Some(document) => {
-            // FIXME: handle document
-            println!("file: {}", document.clone().file_name.unwrap());
             match &document.mime_type {
                 Some(mime_type) => {
                     println!("file type {}", mime_type);
                     if mime_type.to_string() == "application/gpx+xml" {
                         bot.send_message(msg.chat.id, "handling file").await?;
-                        // let file = bot.get_file(&document.file.id).await?;
                         let response =
                             add_file(&bot.clone(), msg.from().unwrap().id.to_string(), document)
                                 .await;

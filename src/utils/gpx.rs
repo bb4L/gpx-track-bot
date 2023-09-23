@@ -27,7 +27,6 @@ pub fn generate_partial_gpx(
     );
 
     let file = File::open(filename).unwrap();
-    // let file = File::open(format!("gpx_files/{}", filename)).unwrap();
     let reader = BufReader::new(file);
 
     // read takes any io::Read and gives a Result<Gpx, Error>.

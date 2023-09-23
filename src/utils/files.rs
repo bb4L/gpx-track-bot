@@ -22,8 +22,6 @@ pub async fn add_file(bot: &Bot, user_id: String, document: &Document) -> String
             match tokio::fs::try_exists(&file_path).await {
                 Ok(exists) => {
                     if exists {
-                        // bot.send_message(msg.chat.id, "file with the same name was already saved")
-                        //     .await?;
                         return "file with the same name was already stored".to_owned();
                     }
                 }
@@ -33,10 +31,8 @@ pub async fn add_file(bot: &Bot, user_id: String, document: &Document) -> String
             }
 
             let mut dst = tokio::fs::File::create(&file_path).await.unwrap();
-            // let writer = BufWriter::new(dst);
 
             let file = bot.get_file(&document.file.id).await.unwrap();
-            // bot.download_file(&file.path, &mut dst).await.unwrap();
             bot.download_file(&file.path, &mut dst).await.unwrap();
             return "file added".to_owned();
         }
