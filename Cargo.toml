@@ -1,6 +1,6 @@
 [package]
 name = "gpx-track-bot"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["bb4L"]
 edition = "2021"
 description = "A telegram-bot to cut gpx files to new tracks with a given length"
