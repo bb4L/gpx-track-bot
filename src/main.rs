@@ -15,10 +15,6 @@ async fn main() {
         panic!("you have to set GPX_TRACK_BOT_ALLOWED_USERS")
     }
 
-    if env::var("GPX_TRACK_BOT_DATA").unwrap_or("no_data_path".to_string()) == "no_data_path" {
-        panic!("you have to set GPX_TRACK_BOT_DATA")
-    }
-
     let base_path = utils::files::get_base_path();
     if !tokio::fs::try_exists(&base_path).await.unwrap() {
         tokio::fs::create_dir(&base_path).await.unwrap();

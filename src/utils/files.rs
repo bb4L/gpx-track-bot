@@ -87,7 +87,7 @@ pub async fn get_file_for_user(user_id: String, file_name: String) -> Option<Str
 }
 
 pub fn get_base_path() -> String {
-    return env::var("GPX_TRACK_BOT_DATA").unwrap().to_string();
+    return env::var("GPX_TRACK_BOT_DATA").unwrap_or("/home/gpx_bot/gpx_files".to_string());
 }
 
 fn get_user_path(user_id: String) -> String {
