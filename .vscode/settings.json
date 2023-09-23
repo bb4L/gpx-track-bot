@@ -1,0 +1,7 @@
+{
+    "files.autoSave": "onWindowChange",
+    "editor.formatOnSave": true,
+    "rust-analyzer.linkedProjects": [
+        "Cargo.toml",
+    ]
+}

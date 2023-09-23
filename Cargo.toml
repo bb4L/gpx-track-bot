@@ -1,0 +1,23 @@
+[package]
+name = "gpx-track-bot"
+version = "1.0.0"
+authors = ["bb4L"]
+edition = "2021"
+description = "A telegram-bot to cut gpx files to new tracks with a given length"
+readme = "README.md"
+repository = "https://github.com/bb4L/gpx-track-bot/"
+license-file = "LICENSE"
+keywords = ["telegram", "bot", "gpx"]
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+teloxide = { version = "0.12", features = ["macros"] }
+log = "0.4"
+pretty_env_logger = "0.5"
+tokio = { version = "1.8", features = ["rt-multi-thread", "macros"] }
+reqwest = "0.11.18"
+serde_json = "1.0"
+gpx = "0.9.1"
+geo = "0.26.0"
+rand = "0.8.5"
+openssl = { version = "0.10", features = ["vendored"] }
