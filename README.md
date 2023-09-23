@@ -15,5 +15,5 @@ services:
       GPX_TRACK_BOT_ALLOWED_USERS: ALLOWED_USERS
     command: gpx-bot
     volumes:
-      - ./path/to/store/gpx/files:/home/gpx_bot/gpx_files
+      - ./path/to/store/gpx/files:/gpx_files
 ```

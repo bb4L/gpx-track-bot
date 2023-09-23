@@ -16,6 +16,7 @@ async fn main() {
     }
 
     let base_path = utils::files::get_base_path();
+
     if !tokio::fs::try_exists(&base_path).await.unwrap() {
         tokio::fs::create_dir(&base_path).await.unwrap();
     }
