@@ -136,7 +136,10 @@ async fn answer(bot: Bot, msg: Message, cmd: Command) -> ResponseResult<()> {
                 bot.send_message(
                     msg.chat.id,
                     String::from("stored files:\n")
-                        + &files.iter().map(|x| format!("- {}", x)).collect::<String>(),
+                        + &files
+                            .iter()
+                            .map(|x| format!("- {}\n", x))
+                            .collect::<String>(),
                 )
                 .await?;
             } else {

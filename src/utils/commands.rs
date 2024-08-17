@@ -8,7 +8,7 @@ pub enum Command {
     #[command(description = "display this text\n")]
     Help,
     #[command(
-        description = "get the cut out version of the gxp file \nArguments: filename, distance, address \nExample: `/cutgpx MyGpxFile.gpx 20 random_sreeet+random_city`\n",
+        description = "get the cut out version of the gxp file \nArguments: filename, distance, address \nExample: `/addresscut MyGpxFile.gpx 20 random_sreeet+random_city`\n",
         parse_with = "split"
     )]
     AddressCut {

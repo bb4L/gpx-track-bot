@@ -1,5 +1,6 @@
 use geo::prelude::*;
 use rand::distributions::{Alphanumeric, DistString};
+use std::env;
 use std::io::BufWriter;
 use std::path::Path;
 
@@ -97,9 +98,9 @@ pub fn generate_partial_gpx(
         new_track.segments.push(new_segment);
 
         resulting_gpx.tracks.push(new_track);
-
         let temp_file_path = format!(
-            "gpx_files/temp_track{}.gpx",
+            "{}/temp_track{}.gpx",
+            env::var("GPX_TRACK_BOT_DATA").unwrap_or("/gpx_files".to_string()),
             Alphanumeric.sample_string(&mut rand::thread_rng(), 16)
         );
         if Path::new(&temp_file_path).exists() {
