@@ -53,7 +53,7 @@ pub fn generate_partial_gpx(
             // only consider points within 10km of the start location
             let distance = point.point().geodesic_distance(&location_point);
 
-            if distance < 10_000 {
+            if distance > 10_000.0 {
                 continue;
             }
             if distance < min_distance {
