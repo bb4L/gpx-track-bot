@@ -50,8 +50,12 @@ pub fn generate_partial_gpx(
         let mut bigger_count = 0;
         for point in &segment.points {
             // find nearest point in gpx file
+            // only consider points within 10km of the start location
             let distance = point.point().geodesic_distance(&location_point);
 
+            if distance > 10_000.0 {
+                continue;
+            }
             if distance < min_distance {
                 min_distance = distance;
                 min_index = count;
