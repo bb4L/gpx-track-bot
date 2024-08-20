@@ -47,27 +47,28 @@ pub fn generate_partial_gpx(
         let mut min_distance: f64 = 100_000_000.0;
         let mut min_index = 0;
         let mut count = 0;
-        let mut bigger_count = 0;
+        //let mut bigger_count = 0;
         for point in &segment.points {
             // find nearest point in gpx file
             // only consider points within 10km of the start location
             let distance = point.point().geodesic_distance(&location_point);
 
-            if distance > 50.0 {
-                continue;
-            }
+            //if distance > 50.0 {
+            //    continue;
+            //}
             if distance < min_distance {
                 min_distance = distance;
                 min_index = count;
-                bigger_count = 0;
-            } else {
-                bigger_count += 1;
+                //bigger_count = 0;
             }
+            // else {
+            //    bigger_count += 1;
+            // }
 
             count += 1;
-            if bigger_count > 100 {
-                break;
-            }
+            //if bigger_count > 100 {
+            //    break;
+            //}
         }
 
         println!(
